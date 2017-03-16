@@ -1,0 +1,79 @@
+############ Pseudo Code for recommendation.py ##############
+
+# Create RDD of the ratings, movies dataset
+lines <-- sc.textFile("ratings")
+r_data_rdd <-- lines.filter(header)
+
+lines2 <-- sc.textFile("ratings")
+m_data_rdd <-- lines2.filter(header)
+
+# Split the data into Training, Test and Validation and Tune the loss function using ALS to get the best model
+training_RDD, validation_RDD, test_RDD <-- r_data_rdd.randomSplit([6, 2, 2], seed=0L)
+
+# For Prediction exclude the rating
+vpredict_RDD <-- validation_RDD.map(lambda x => (x[0], x[1]))
+Final_test_RDD <-- test_RDD.map(lambda x => (x[0], x[1]))
+
+# Create a list of ranks, for tuning the model
+ranks <-- [5, 8, 12]
+
+# Train the model for each of the rank values in the list above and also by changing few other parameters for ALS and select the best model
+foreach rank in ranks:
+	model = ALS.train(rank=rank)
+	calculate(RMSE)
+	best model <-- min(RMSE)
+
+# Test the Test_RDD with the Best model to get all the metrics required
+# RMSE, MSE , MAP
+
+bestmodel <-- ALS.train(rank = rank_chosen)
+predictions <-- model.predictall(test_RDD)
+calculate(MSE)
+calculate(RMSE)
+calculate(MAP)
+
+############### PART 2 ########################
+# Creating New User with few movie ratings
+
+new_user_ratings <= [
+     (user_ID,  666, 4.0), 
+     (user_ID, 1024, 3.0), 
+     (user_ID, 1606, 4.0), 
+     (user_ID, 1485, 5.0), 
+     (user_ID,   32, 5.0), 
+     (user_ID,  335, 4.0), 
+     (user_ID,  379, 3.0), 
+     (user_ID,  296, 4.0), 
+     (user_ID,  858, 5.0), 
+     (user_ID,   50, 4.5),
+     (user_ID,  318, 5.0),
+     (user_ID,  858, 5.0),
+     (user_ID,   50, 5.0),  
+     (user_ID,  527, 4.5),    
+     (user_ID, 1221, 5.0),      
+     (user_ID,  912, 5.0), 
+     (user_ID, 1193, 4.0)
+    ]
+
+user_RDD <= sc.parallelize(new_user_ratings)
+
+rating_full = rating_rdd.add(user_RDD)
+
+#Train the data with the best model after adding the user into the ratings dataset
+model <-- ALS.train(rank=rank_chosen)
+
+# Predict the movie ratings for the movies not rated by the new user.
+new_user_unrated_movies_RDD <= movie_ID not in Movies_dataset
+
+# Use the input RDD, new_user_unrated_movies_RDD, with new_ratings_model.predictAll() to predict new ratings for the movies
+new_user_recommendations_RDD = new_ratings_model.predictAll(new_user_unrated_movies_RDD)
+
+new_user_recommendations_RDD.take(5)
+
+
+
+
+
+
+
+
